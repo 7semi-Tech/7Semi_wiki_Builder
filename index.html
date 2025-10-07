@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>7Semi Wiki — Builder</title>
+<meta name="description" content="Build a static product wiki page without JSON or APIs." />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+
+<style id="mainStyle">
+:root{
+  --bg:#f6f9ff; --panel:#ffffff; --ink:#0f172a; --muted:#475569; --muted-2:#64748b;
+  --brand:#5b7cff; --brand2:#10c6d6; --ok:#16a34a;
+  --edge:rgba(2,6,23,.08); --edge-2:rgba(2,6,23,.14);
+  --shadow:0 12px 30px rgba(2,6,23,.10), 0 2px 6px rgba(2,6,23,.04);
+  --chip:linear-gradient(180deg,#eef4ff,#eaf8ff);
+  --h-step:clamp(22px,2.6vw,30px); --p-step:clamp(16px,1.8vw,19px);
+  --logo-h-desktop: 88px; --logo-h-mobile: 56px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
+  background:
+    radial-gradient(900px 380px at 12% 0%, rgba(91,124,255,.08), transparent 60%),
+    radial-gradient(800px 360px at 88% -10%, rgba(16,198,214,.08), transparent 58%),
+    var(--bg);
+  color:var(--ink); line-height:1.65;
+}
+.wrapper{max-width:1200px; margin:0 auto; padding:24px}
+
+/* Header */
+.hero{padding:34px 0 16px; display:grid; gap:14px; justify-items:center; text-align:center}
+.brandbar{display:flex; flex-direction:column; align-items:center; gap:10px; margin-bottom:6px}
+.brandbar img{height:var(--logo-h-desktop); width:auto; filter:drop-shadow(0 1px 0 rgba(2,6,23,.04))}
+@media (max-width:1024px){ .brandbar img{height:var(--logo-h-mobile)} }
+.badge{display:inline-flex; align-items:center; gap:8px; padding:6px 12px; font-size:12px; font-weight:700; border-radius:999px; color:#1e293b; background:var(--chip); border:1px solid var(--edge); box-shadow:0 6px 16px rgba(2,6,23,.06)}
+h1{margin:8px 0 2px; font-weight:800; letter-spacing:-.02em; line-height:1.06; font-size:clamp(32px,5.2vw,56px)}
+.grad{background:linear-gradient(90deg,var(--brand),var(--brand2)); -webkit-background-clip:text; background-clip:text; color:transparent}
+.lead{color:var(--muted); max-width:76ch; margin:0 auto 6px}
+.cta{display:flex; gap:12px; flex-wrap:wrap; justify-content:center}
+.btn{appearance:none; border:0; cursor:pointer; font-weight:700; padding:12px 16px; border-radius:12px; box-shadow:var(--shadow)}
+.btn.primary{background:linear-gradient(135deg,var(--brand),var(--brand2)); color:#fff}
+.btn.ghost{background:#fff; color:#0f172a; border:1px solid var(--edge)}
+progress.progress{width:100%; height:4px; appearance:none; margin:10px 0 0}
+progress.progress::-webkit-progress-bar{background:rgba(2,6,23,.08); border-radius:999px}
+progress.progress::-webkit-progress-value{background:linear-gradient(90deg,var(--brand),var(--brand2)); border-radius:999px}
+
+/* Layout */
+.grid{display:grid; grid-template-columns:300px 1fr; gap:24px; align-items:start; margin-top:18px}
+@media (max-width:1024px){ .grid{grid-template-columns:1fr} }
+
+/* Sidebar */
+.side{
+  position:sticky; top:18px; align-self:start; display:flex; flex-direction:column; gap:14px;
+  background:var(--panel); border:1px solid var(--edge); border-radius:14px; padding:14px; box-shadow:var(--shadow)
+}
+.side h2{margin:0 0 6px; font-size:13px; letter-spacing:.16em; color:#334155}
+.stepnav{display:flex; flex-direction:column; gap:10px}
+.stepnav a{
+  display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--muted); font-weight:600;
+  padding:10px 10px; border-radius:12px; border:1px solid rgba(2,6,23,0);
+  transition:background .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
+}
+.stepnav a .num{display:grid; place-items:center; width:28px; height:28px; border-radius:9px; background:#f1f5ff; border:1px solid #dbe4ff; color:#3b82f6; font-weight:800; font-size:13px}
+.stepnav a:hover{background:#f8fbff; border-color:var(--edge)}
+.stepnav a.active{color:#0f172a; border-color:#dbe4ff; background:linear-gradient(180deg,#eef4ff,#f7fbff); box-shadow:0 4px 10px rgba(2,6,23,.06) inset}
+
+/* Cards */
+.steps{display:flex; flex-direction:column; gap:22px}
+.card{background:var(--panel); border:1px solid var(--edge); border-radius:16px; padding:18px 18px 22px; box-shadow:var(--shadow); position:relative; overflow:hidden}
+.card::after{content:""; position:absolute; inset:0; border-radius:18px; pointer-events:none; box-shadow:inset 0 0 0 1px rgba(255,255,255,.6)}
+.kicker{display:flex; align-items:center; gap:8px; font-size:12px; color:#3b82f6; letter-spacing:.14em}
+.kicker .num{display:grid; place-items:center; width:28px; height:28px; border-radius:8px; background:#eef4ff; border:1px solid #dbe4ff; font-weight:800}
+.card h3{margin:10px 0 6px; font-size:var(--h-step); letter-spacing:-.01em}
+.card p{margin:0 0 8px; color:#475569; font-size:var(--p-step)}
+.card .hint{display:inline-flex; gap:6px; align-items:center; font-size:13px; color:#0f172a; background:#f1f5ff; border:1px dashed #c7d2fe; padding:6px 8px; border-radius:8px; margin-top:8px}
+.card ul{margin:6px 0 0 18px}
+.card li{margin:4px 0}
+
+/* Tables */
+.table{width:100%; border-collapse:separate; border-spacing:0; margin-top:10px; border:1px solid var(--edge); border-radius:10px; overflow:hidden}
+.table th,.table td{padding:11px 12px; border-bottom:1px solid var(--edge); font-size:15px}
+.table th{background:#f8fbff; text-align:left; color:#0f172a}
+.table tr:last-child td{border-bottom:0}
+
+/* Media */
+.media{margin-top:12px; border-radius:14px; border:1px solid var(--edge); background:#fff; padding:12px; display:grid; place-items:center; box-shadow:0 12px 26px rgba(2,6,23,.08)}
+.media figure{margin:0; width:100%}
+.media img{display:block; width:auto; height:auto; max-width:100%; max-height:88vh; object-fit:contain; border-radius:10px}
+.media figcaption{margin-top:8px; color:#64748b; font-size:13px; text-align:center}
+.tools{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
+.toolbtn{background:#fff; color:#0f172a; border:1px solid var(--edge); padding:8px 10px; border-radius:10px; font-weight:600; cursor:pointer; box-shadow:var(--shadow)}
+.toolbtn:focus{outline:2px solid rgba(37,99,235,.35); outline-offset:2px}
+
+/* Lightbox (builder/JS preview only) */
+#lightbox{position:fixed; inset:0; display:none; place-items:center; background:rgba(2,6,23,.75); z-index:50}
+#lightbox.open{display:grid}
+#lightbox img{width:auto; height:auto; max-width:min(96vw,1400px); max-height:90vh; border-radius:12px}
+
+/* Footer */
+footer{margin:26px 0 60px}
+.tipbox{background:#f0fdfa; border:1px solid #a7f3d0; border-left:4px solid #34d399; padding:12px 14px; border-radius:12px; color:#064e3b; font-size:14px}
+.statusline{margin-top:10px; font-size:14px; color:#334155}
+.statusline .ok{color:#16a34a; font-weight:800}
+.code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; font-size:14px; background:#f8fafc; border:1px solid var(--edge); padding:10px 12px; border-radius:8px; display:inline-block}
+
+/* Mobile topbar + drawer (JS preview) */
+.topbar{display:none;}
+@media (max-width:1024px){
+  .grid{ grid-template-columns:1fr }
+  .topbar{
+    position:sticky; top:0; z-index:60; display:flex; align-items:center; gap:10px;
+    padding:10px 14px; background:rgba(255,255,255,.82); border-bottom:1px solid var(--edge); backdrop-filter: blur(10px);
+  }
+  .hamburger{
+    appearance:none; border:1px solid var(--edge); background:#fff; width:40px; height:40px; border-radius:10px; display:grid; place-items:center; cursor:pointer; color:#0f172a; box-shadow:var(--shadow);
+  }
+  .hamburger svg{width:22px; height:22px}
+  .hero{padding-top:16px}
+  .side{ display:none } /* Hide sidebar on mobile */
+}
+
+#drawerBackdrop{ position:fixed; inset:0; background:rgba(2,6,23,.35); z-index:70; display:none; }
+#drawer{
+  position:fixed; top:0; left:0; height:100vh; width:min(82vw,320px);
+  background:var(--panel); border-right:1px solid var(--edge); box-shadow:var(--shadow);
+  transform:translateX(-100%); transition:transform .25s ease; z-index:80; padding:16px; display:flex; flex-direction:column; gap:12px;
+}
+#drawer.open{ transform:translateX(0) }  #drawerBackdrop.open{ display:block }
+.drawer-head{display:flex; align-items:center; justify-content:space-between}
+.drawer-title{font-weight:800; letter-spacing:.06em; color:#334155}
+.drawer-close{appearance:none; border:1px solid var(--edge); background:#fff; width:36px; height:36px; border-radius:10px; display:grid; place-items:center; color:#0f172a; cursor:pointer;}
+#drawer nav.stepnav a{border-color:var(--edge); background:transparent}
+
+/* Code block */
+.codewrap{ position:relative; }
+.codeblock{
+  background:#0f172a; color:#e2e8f0;
+  border:1px solid var(--edge); border-radius:10px;
+  padding:14px 16px; overflow:auto; line-height:1.55; font-size:14px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+}
+.copybtn{
+  position:absolute; top:8px; right:8px; z-index:1;
+  background:#fff; color:#0f172a; border:1px solid var(--edge);
+  border-radius:8px; padding:6px 10px; font-weight:700; cursor:pointer; box-shadow:var(--shadow);
+}
+
+/* small badge so you know JS is running */
+#js-ready{position:fixed; bottom:10px; right:10px; background:#10b981; color:#fff; padding:6px 10px; border-radius:999px; font-size:12px; box-shadow:var(--shadow); display:none}
+
+/* ===== Extra rules used ONLY in "No JS" export ===== */
+.nj-topbar{position:sticky; top:0; z-index:60; display:none; align-items:center; gap:10px; padding:10px 14px; background:rgba(255,255,255,.82); border-bottom:1px solid var(--edge); backdrop-filter: blur(10px)}
+.nj-hamburger{appearance:none; border:1px solid var(--edge); background:#fff; width:40px; height:40px; border-radius:10px; display:grid; place-items:center; cursor:pointer; color:#0f172a; box-shadow:var(--shadow)}
+#navToggle{display:none}
+#njBackdrop{display:none; position:fixed; inset:0; background:rgba(2,6,23,.35); z-index:70}
+#njDrawer{position:fixed; top:0; left:0; height:100vh; width:min(82vw,320px); background:var(--panel); border-right:1px solid var(--edge); box-shadow:var(--shadow); transform:translateX(-100%); transition:transform .25s ease; z-index:80; padding:16px; display:flex; flex-direction:column; gap:12px}
+#navToggle:checked ~ #njBackdrop{display:block}
+#navToggle:checked ~ #njDrawer{transform:translateX(0)}
+@media (max-width:1024px){ .nj-topbar{display:flex} .side{display:none} }
+
+/* ===== Mobile fit / overflow fixes ===== */
+html, body { max-width: 100%; overflow-x: hidden; }
+img, svg, video, canvas { max-width: 100%; height: auto; display: block; }
+p, li, figcaption, td, th { overflow-wrap: anywhere; word-break: break-word; }
+.table { width: 100%; display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table thead, .table tbody { width: 100%; }
+.table th, .table td { white-space: normal; }
+.codeblock { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.codeblock code { white-space: pre; }
+@media (max-width: 480px){
+  .wrapper { padding-left: 16px; padding-right: 16px; }
+  .card { padding: 14px 12px 16px; }
+  .media { padding: 8px; }
+  .stepnav a { padding: 10px 8px; }
+  .brandbar img { max-width: 80vw; height: auto; }
+}
+</style>
+
+<style id="editorStyle">
+.builder-bar{
+  position:sticky; top:0; z-index:100; display:flex; gap:8px; align-items:center;
+  background:#0f172a; color:#fff; padding:10px 12px; border-bottom:1px solid rgba(255,255,255,.1)
+}
+.builder-bar .btn{background:#1f2937; border:1px solid rgba(255,255,255,.15); color:#fff}
+.builder{display:grid; grid-template-columns:360px 1fr; gap:18px; padding:14px; background:#f1f5f9}
+@media (max-width:1080px){ .builder{grid-template-columns:1fr} }
+.form{
+  background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:14px; box-shadow:0 6px 16px rgba(2,6,23,.06);
+  display:grid; gap:10px;
+}
+.form h3{margin:6px 0}
+.form .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.form label{font-size:12px; font-weight:700; color:#1f2937}
+.form input[type="text"], .form input[type="url"], .form textarea{
+  width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:10px; font:inherit; background:#fff
+}
+.form textarea{min-height:80px}
+.row{display:flex; gap:8px; align-items:center}
+.row input{flex:1}
+.small{color:#94a3b8; font-size:12px}
+.preview-shell{background:#fff; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 6px 16px rgba(2,6,23,.06); overflow:hidden}
+
+/* === Drag & Drop additions === */
+.row { position: relative; }
+.drag-handle {
+  cursor: grab;
+  user-select: none;
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  display: grid; place-items: center;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+}
+.drag-handle:active { cursor: grabbing; }
+.row.dragging { opacity: .6; transform: scale(.995); }
+.row.drop-target { outline: 2px dashed #93c5fd; outline-offset: 4px; }
+</style>
+</head>
+<body>
+
+<div class="builder-bar">
+  <strong>7Semi Wiki — Builder (no JSON, no API)</strong>
+  <button class="btn" id="btnPreview" type="button">Preview</button>
+  <button class="btn" id="btnSave" type="button">Save draft (local)</button>
+  <button class="btn" id="btnLoad" type="button">Load draft</button>
+  <button class="btn" id="btnDownloadSafe" type="button">Download BigCommerce-safe (No JS)</button>
+  <button class="btn primary" id="btnDownload" type="button">Download HTML</button>
+  <span class="small" style="margin-left:auto">Tip: use the <em>No JS</em> export for BigCommerce.</span>
+</div>
+
+<div class="builder">
+  <!-- ===== Form ===== -->
+  <div class="form" id="form">
+    <h3>Hero</h3>
+    <div class="grid2">
+      <div><label>Title</label><input id="title" type="text" placeholder="7Semi SCD40 CO₂ Sensor Breakout Mini"></div>
+      <div><label>Badge</label><input id="badge" type="text" placeholder="📦 Qwiic I²C • 3.3–5V • 0x62"></div>
+      <div><label>Logo URL</label><input id="logo" type="url" placeholder="https://cdn11.bigcommerce.com/s-e7ighpotvb/images/stencil/original/image-manager/7semi.png"></div>
+      <div><label>Lead (short intro)</label><input id="lead" type="text" placeholder="Compact photoacoustic CO₂ sensor with T/RH..."></div>
+    </div>
+    <div class="grid2">
+      <div><label>Hero image URL</label><input id="hero_image" type="url" placeholder="https://.../hero.png"></div>
+      <div><label>Hero caption</label><input id="hero_caption" type="text" placeholder="Product photo/caption"></div>
+    </div>
+
+    <div class="sep"></div>
+    <h3>Overview</h3>
+    <textarea id="overview" placeholder="One or two sentences about the product..."></textarea>
+
+    <div class="sep"></div>
+    <h3>Features (one per line)</h3>
+    <textarea id="features" placeholder="Feature 1&#10;Feature 2&#10;Feature 3"></textarea>
+
+    <div class="sep"></div>
+    <h3>Specs (one per line as “Parameter: Value”)</h3>
+    <textarea id="specs" placeholder="CO₂ range: 400–2000 ppm&#10;Accuracy: ±(50 ppm + 5% of reading)"></textarea>
+
+    <div class="sep"></div>
+    <h3>Pinouts</h3>
+
+    <div class="grid2" style="margin-top:8px">
+      <div>
+        <label>Pinout image URL</label>
+        <input id="pin_image" type="url" placeholder="https://.../pinout-diagram.png">
+      </div>
+      <div>
+        <label>Caption</label>
+        <input id="pin_caption" type="text" placeholder="Pinout diagram / header mapping">
+      </div>
+    </div>
+
+    <div id="pinList"></div>
+    <div class="row"><button class="btn" id="addPin" type="button">+ Add pin</button></div>
+
+    <div class="sep"></div>
+    <h3>Hardware</h3>
+    <input id="hw_title" type="text" placeholder="I²C wiring example (Arduino UNO)">
+    <label>Wiring steps (one per line)</label>
+    <textarea id="hw_steps" placeholder="Power — VCC → 5 V; GND → GND&#10;I²C — SCL → A5, SDA → A4"></textarea>
+    <div class="grid2">
+      <div><label>Image URL</label><input id="hw_image" type="url" placeholder="https://.../wiring.png"></div>
+      <div><label>Caption</label><input id="hw_caption" type="text" placeholder="Typical UNO wiring"></div>
+    </div>
+
+    <div class="sep"></div>
+    <h3>Example Code</h3>
+    <input id="code_title" type="text" placeholder="Arduino & ESP32 notes">
+    <label>Notes (one per line; HTML allowed)</label>
+    <textarea id="code_notes" placeholder="Initialize sensor...&#10;Use <code>#define NO_ERROR 0</code>..."></textarea>
+    <h4 style="margin:6px 0 0">Downloads</h4>
+    <div id="dlList"></div>
+    <div class="row"><button class="btn" id="addDl" type="button">+ Add download</button></div>
+
+    <h4 style="margin:6px 0 0">Full code snippet</h4>
+    <textarea id="code_snippet" placeholder="Paste your entire sketch here (it will render under Arduino &amp; ESP32 notes)"></textarea>
+
+    <div class="sep"></div>
+    <h3>Sample Output</h3>
+    <div class="grid2">
+      <div><label>Image URL</label><input id="sample_image" type="url" placeholder="https://.../serial.png"></div>
+      <div><label>Caption</label><input id="sample_caption" type="text" placeholder="Serial Monitor capture"></div>
+    </div>
+
+    <div class="sep"></div>
+    <h3>Mechanical</h3>
+    <div class="grid2">
+      <div><label>Dimensions</label><input id="mech_dimensions" type="text" placeholder="29.82 × 21.86 mm"></div>
+      <div><label>Image URL</label><input id="mech_image" type="url" placeholder="https://.../mech.png"></div>
+    </div>
+    <input id="mech_caption" type="text" placeholder="Mechanical drawing notes">
+
+    <div class="sep"></div>
+    <div class="grid2">
+      <div><label>Support footer (HTML OK)</label><input id="support" type="text" placeholder="For help, contact <em>info@7semi.com</em>"></div>
+      <div><label>Last updated</label><input id="updated" type="text" placeholder="2025-09-23"></div>
+    </div>
+  </div>
+
+  <!-- ===== Live Preview ===== -->
+  <div class="preview-shell">
+    <div class="topbar" role="banner">
+      <button id="menuBtn" class="hamburger" aria-label="Open menu" aria-controls="drawer" aria-expanded="false" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+      <strong>7Semi Wiki</strong>
+    </div>
+
+    <div id="drawerBackdrop" aria-hidden="true"></div>
+    <aside id="drawer" role="dialog" aria-modal="true" aria-label="Mobile menu">
+      <div class="drawer-head">
+        <span class="drawer-title">MENU</span>
+        <button class="drawer-close" id="drawerClose" aria-label="Close menu" type="button">✕</button>
+      </div>
+      <nav class="stepnav" id="drawerNav" aria-label="Sections"></nav>
+    </aside>
+
+    <div class="wrapper" id="wrapper">
+      <header class="hero" aria-labelledby="page-title">
+        <div class="brandbar">
+          <a href="https://www.7semi.colm" target="_blank" rel="noopener" aria-label="Go to 7Semi website">
+            <img id="heroLogo" src="https://cdn11.bigcommerce.com/s-e7ighpotvb/images/stencil/original/image-manager/7semi.png" alt="7Semi Logo" />
+          </a>
+          <span class="badge" id="heroBadge">Badge here</span>
+        </div>
+        <h1 id="page-title"><span class="grad">Product title</span></h1>
+        <p class="lead" id="heroLead">Lead / intro text</p>
+        <div class="cta" id="cta"></div>
+        <progress class="progress" id="mobileProgress" max="100" value="0" aria-hidden="true"></progress>
+      </header>
+
+      <section class="grid" aria-label="Product wiki">
+        <aside class="side" aria-label="Index">
+          <h2>SECTIONS</h2>
+          <nav class="stepnav" id="stepNav"></nav>
+        </aside>
+
+        <main class="steps" id="content"></main>
+      </section>
+
+      <footer>
+        <div class="tipbox" id="supportBox"></div>
+        <p class="statusline" id="statusLine"></p>
+      </footer>
+    </div>
+
+    <div id="lightbox" role="dialog" aria-modal="true" aria-label="Image preview"><img src="" alt=""/></div>
+  </div>
+</div>
+
+<!-- tiny badge so you know JS is running -->
+<div id="js-ready">JS Ready</div>
+
+<script>
+/* ===== Safety net: show errors if something blocks init ===== */
+window.addEventListener('error', e => {
+  const b = document.getElementById('js-ready');
+  if (b){ b.style.background = '#ef4444'; b.textContent = 'JS error – open console'; b.style.display='block'; }
+});
+
+/* ===== builder helpers ===== */
+const Q = (s, r=document) => r.querySelector(s);
+const QA = (s, r=document) => Array.from(r.querySelectorAll(s));
+const create = (tag, attrs={}) => Object.assign(document.createElement(tag), attrs);
+
+/* signal JS active */
+const badge = document.getElementById('js-ready'); if (badge) badge.style.display='block';
+
+const sectionsOrder = [
+  {id:'s1', label:'Overview'},
+  {id:'s2', label:'Features'},
+  {id:'s3', label:'Technical Specification'},
+  {id:'s4', label:'Pinouts'},
+  {id:'s5', label:'Hardware Interface'},
+  {id:'s6', label:'Example Code (Arduino/ESP32)'},
+  {id:'s7', label:'Sample Output'},
+  {id:'s8', label:'Mechanical'}
+];
+
+function lines(val){ return (val||'').split('\n').map(s=>s.trim()).filter(Boolean); }
+
+/* === Minimal Sortable with HTML5 DnD === */
+function makeSortable(container, { rowSelector = '.row', handleSelector = '.drag-handle' } = {}) {
+  let draggingEl = null;
+
+  container.addEventListener('dragstart', (e) => {
+    const handle = e.target.closest(handleSelector);
+    if (!handle) return;
+    const row = handle.closest(rowSelector);
+    if (!row || !container.contains(row)) return;
+    draggingEl = row;
+    row.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', ''); // FF requirement
+  });
+
+  container.addEventListener('dragend', () => {
+    if (draggingEl) draggingEl.classList.remove('dragging');
+    draggingEl = null;
+    container.querySelectorAll(rowSelector).forEach(r => r.classList.remove('drop-target'));
+  });
+
+  container.addEventListener('dragover', (e) => {
+    if (!draggingEl) return;
+    e.preventDefault();
+    const rows = [...container.querySelectorAll(rowSelector)].filter(r=>r!==draggingEl);
+    let insertBefore = null;
+    for (const r of rows) {
+      const rect = r.getBoundingClientRect();
+      if (e.clientY < rect.top + rect.height / 2) { insertBefore = r; break; }
+    }
+    container.querySelectorAll(rowSelector).forEach(r => r.classList.remove('drop-target'));
+    if (insertBefore) {
+      container.insertBefore(draggingEl, insertBefore);
+      insertBefore.classList.add('drop-target');
+    } else {
+      container.appendChild(draggingEl);
+      rows.at(-1)?.classList.add('drop-target');
+    }
+  });
+}
+
+/* dynamic lists */
+const pinList = Q('#pinList');
+const dlList = Q('#dlList');
+function addPin(n='', pin='', desc=''){
+  const row = create('div',{className:'row', draggable:true});
+  const handle = create('button', { className:'drag-handle', type:'button', title:'Drag to reorder', innerHTML:'⠿' });
+  const a = create('input',{type:'text', placeholder:'#', value:n}); a.style.width='64px';
+  const b = create('input',{type:'text', placeholder:'Pin', value:pin});
+  const c = create('input',{type:'text', placeholder:'Description', value:desc});
+  const rm = create('button',{className:'btn', textContent:'–', type:'button'});
+  rm.addEventListener('click',()=>row.remove());
+  row.append(handle,a,b,c,rm); pinList.append(row);
+}
+function addDl(label='', url=''){
+  const row = create('div',{className:'row', draggable:true});
+  const handle = create('button', { className:'drag-handle', type:'button', title:'Drag to reorder', innerHTML:'⠿' });
+  const a = create('input',{type:'text', placeholder:'Label', value:label});
+  const b = create('input',{type:'url', placeholder:'https://...', value:url});
+  const rm = create('button',{className:'btn', textContent:'–', type:'button'});
+  rm.addEventListener('click',()=>row.remove());
+  row.append(handle,a,b,rm); dlList.append(row);
+}
+Q('#addPin').addEventListener('click', ()=> addPin());
+Q('#addDl').addEventListener('click', ()=> addDl());
+addPin(1,'VCC','Power input (2.4–5 V)');
+// enable sorting for both lists
+makeSortable(pinList);
+makeSortable(dlList);
+
+/* form -> data */
+function collect(){
+  const p = (id)=> Q('#'+id).value;
+  const pins = Array.from(pinList.children).map(r=>{
+    const [handle,a,b,c,rm] = r.querySelectorAll('button.drag-handle, input');
+    return {n:a?.value||'', pin:b?.value||'', desc:c?.value||''}
+  }).filter(x=>x.pin||x.desc);
+  const dls = Array.from(dlList.children).map(r=>{
+    const [handle,a,b,rm] = r.querySelectorAll('button.drag-handle, input');
+    return {label:a?.value||'', url:b?.value||''}
+  }).filter(x=>x.label&&x.url);
+
+  return {
+    title: p('title'), badge: p('badge'), logo: p('logo'), lead: p('lead'),
+    hero_image: p('hero_image'), hero_caption: p('hero_caption'), overview: p('overview'),
+    features: lines(p('features')),
+    specs: (()=>{ const o={}; lines(p('specs')).forEach(line=>{ const i=line.indexOf(':'); if(i>0){o[line.slice(0,i).trim()]=line.slice(i+1).trim();}}); return o;})(),
+    pinouts: pins,
+    pinouts_media: { image: p('pin_image'), caption: p('pin_caption') },
+
+    hardware: { title: p('hw_title'), wiring: lines(p('hw_steps')), image: p('hw_image'), caption: p('hw_caption') },
+    code: { title: p('code_title'), notes: lines(p('code_notes')), downloads: dls, snippet: p('code_snippet') },
+    sample_output: { image: p('sample_image'), caption: p('sample_caption') },
+    mechanical: { dimensions: p('mech_dimensions'), image: p('mech_image'), caption: p('mech_caption') },
+    support: p('support'),
+    updated: p('updated')
+  };
+}
+
+/* helpers for preview */
+function appendCard(root, id, kicker, title, fill){
+  const art = create('article',{className:'card', id});
+  const k = create('div',{className:'kicker'});
+  k.appendChild(create('span',{className:'num',textContent:String(sectionsOrder.findIndex(s=>s.id===id)+1)}));
+  k.append(' '+kicker); art.appendChild(k);
+  art.appendChild(create('h3',{textContent:title}));
+  const box = create('div'); fill(box); art.appendChild(box);
+  root.appendChild(art);
+}
+function ul(items){ const u=create('ul'); (items||[]).forEach(x=>u.appendChild(create('li',{innerHTML:x}))); return u; }
+function pNode(t){ return create('p',{innerHTML:t}); }
+function specTable(obj){
+  const t=create('table',{className:'table',role:'table'});
+  const th=create('thead'), trh=create('tr');
+  trh.appendChild(create('th',{textContent:'Parameter'})); trh.appendChild(create('th',{textContent:'Value'}));
+  th.appendChild(trh); t.appendChild(th);
+  const tb=create('tbody');
+  Object.entries(obj||{}).forEach(([k,v])=>{ const tr=create('tr'); tr.appendChild(create('td',{innerHTML:k})); tr.appendChild(create('td',{innerHTML:String(v)})); tb.appendChild(tr); });
+  t.appendChild(tb); return t;
+}
+function pinTable(arr){
+  const t=create('table',{className:'table',role:'table'}), th=create('thead'), trh=create('tr');
+  ['#','Pin','Description'].forEach(h=>trh.appendChild(create('th',{textContent:h}))); th.appendChild(trh); t.appendChild(th);
+  const tb=create('tbody');
+  (arr||[]).forEach(row=>{ const tr=create('tr'); tr.appendChild(create('td',{textContent:row.n||''})); tr.appendChild(create('td',{textContent:row.pin||''})); tr.appendChild(create('td',{innerHTML:row.desc||''})); tb.appendChild(tr); });
+  t.appendChild(tb); return t;
+}
+function mediaFigure(src, caption){
+  const wrap=create('div',{className:'media'}), fig=create('figure'), img=create('img',{src,loading:'lazy',decoding:'async'});
+  fig.appendChild(img); if(caption){ fig.appendChild(create('figcaption',{innerHTML:caption})); }
+  wrap.appendChild(fig);
+  const tools=create('div',{className:'tools'}), btn=create('button',{className:'toolbtn',textContent:'🔎 View full size', type:'button'});
+  btn.addEventListener('click',()=>openLB(img)); tools.appendChild(btn); wrap.appendChild(tools);
+  return wrap;
+}
+function codeBlock(src){
+  const wrap = create('div', {className:'codewrap'});
+  const pre  = create('pre', {className:'codeblock'});
+  const code = create('code');
+  code.textContent = (src||'').trim();
+  pre.appendChild(code);
+
+  const btn = create('button', {className:'copybtn', textContent:'Copy', type:'button'});
+  btn.addEventListener('click', async ()=>{
+    try { await navigator.clipboard.writeText(code.textContent); btn.textContent='Copied!'; setTimeout(()=>btn.textContent='Copy', 1200); }
+    catch(_) { btn.textContent='Oops'; setTimeout(()=>btn.textContent='Copy', 1200); }
+  });
+
+  wrap.append(pre, btn);
+  return wrap;
+}
+
+/* behaviors for preview */
+function setupLightbox(){
+  const lb=Q('#lightbox'), lbImg=lb.querySelector('img');
+  window.openLB=(img)=>{ lbImg.src=img.currentSrc||img.src; lbImg.alt=img.alt||'Preview'; lb.classList.add('open'); };
+  lb.addEventListener('click',()=>lb.classList.remove('open'));
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') lb.classList.remove('open'); });
+  QA('.media img').forEach(img=>{ img.style.cursor='zoom-in'; img.addEventListener('click',()=>openLB(img)); });
+}
+function setupObservers(){
+  const links = QA('#stepNav a, #drawerNav a');
+  const sections = links.map(a=>Q(a.getAttribute('href'))).filter(Boolean);
+  const mobProg = Q('#mobileProgress');
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        const id='#'+entry.target.id;
+        links.forEach(a=>a.classList.toggle('active',a.getAttribute('href')===id));
+        const idx = sections.indexOf(entry.target);
+        if(mobProg) mobProg.value = Math.round(((idx+1)/sections.length)*100);
+      }
+    });
+  },{rootMargin:'-40% 0px -50% 0px', threshold:.01});
+  sections.forEach(sec=> io.observe(sec));
+}
+function setupDrawer(){
+  const drawer=Q('#drawer'), backdrop=Q('#drawerBackdrop'), menuBtn=Q('#menuBtn'), drawerClose=Q('#drawerClose');
+  function openDrawer(){ drawer.classList.add('open'); backdrop.classList.add('open'); document.body.style.overflow='hidden'; if(menuBtn) menuBtn.setAttribute('aria-expanded','true'); }
+  function closeDrawer(){ drawer.classList.remove('open'); backdrop.classList.remove('open'); document.body.style.overflow=''; if(menuBtn) menuBtn.setAttribute('aria-expanded','false'); }
+  if(menuBtn) menuBtn.addEventListener('click', openDrawer);
+  if(drawerClose) drawerClose.addEventListener('click', closeDrawer);
+  if(backdrop) backdrop.addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDrawer(); });
+  Q('#drawerNav').addEventListener('click', (e)=>{ if(e.target.matches('a')) closeDrawer(); });
+}
+
+/* build preview UI from data */
+function render(d){
+  const logoEl = Q('#heroLogo');
+  logoEl.src = d.logo || 'https://cdn11.bigcommerce.com/s-e7ighpotvb/images/stencil/original/image-manager/7semi.png';
+  Q('#heroBadge').textContent = d.badge || '';
+  Q('#page-title').innerHTML = `<span class="grad">${d.title||''}</span>`;
+  Q('#heroLead').innerHTML = d.lead || '';
+
+  const stepNav = Q('#stepNav'), drawerNav = Q('#drawerNav'), content = Q('#content');
+  stepNav.innerHTML=''; drawerNav.innerHTML=''; content.innerHTML='';
+
+  const present = [];
+
+  if(d.hero_image || d.overview){
+    present.push({id:'s1', label:'Overview'});
+    appendCard(content,'s1','OVERVIEW','What is this product?',(box)=>{
+      if(d.hero_image) box.appendChild(mediaFigure(d.hero_image, d.hero_caption||''));
+      if(d.overview) box.appendChild(pNode(d.overview));
+    });
+  }
+  if(d.features && d.features.length){
+    present.push({id:'s2', label:'Features'});
+    appendCard(content,'s2','FEATURES','Highlights',(box)=> box.appendChild(ul(d.features)));
+  }
+  if(d.specs && Object.keys(d.specs).length){
+    present.push({id:'s3', label:'Technical Specification'});
+    appendCard(content,'s3','TECHNICAL SPEC','Key parameters',(box)=> box.appendChild(specTable(d.specs)));
+  }
+  if ((d.pinouts && d.pinouts.length) || (d.pinouts_media && d.pinouts_media.image)) {
+    present.push({id:'s4', label:'Pinouts'});
+    appendCard(content,'s4','PINOUTS','Headers & signals',(box)=> {
+      if (d.pinouts_media && d.pinouts_media.image) {
+        box.appendChild(mediaFigure(d.pinouts_media.image, d.pinouts_media.caption || ''));
+      }
+      if (d.pinouts && d.pinouts.length) {
+        box.appendChild(pinTable(d.pinouts));
+      }
+    });
+  }
+  if(d.hardware && (d.hardware.title || (d.hardware.wiring||[]).length || d.hardware.image)){
+    present.push({id:'s5', label:'Hardware Interface'});
+    appendCard(content,'s5','HARDWARE', d.hardware.title || 'I²C wiring example',(box)=>{
+      if((d.hardware.wiring||[]).length) box.appendChild(ul(d.hardware.wiring));
+      if(d.hardware.image) box.appendChild(mediaFigure(d.hardware.image, d.hardware.caption||''));
+    });
+  }
+  if(d.code && (d.code.title || (d.code.notes||[]).length || (d.code.downloads||[]).length || d.code.snippet)){
+    present.push({id:'s6', label:'Example Code (Arduino/ESP32)'});
+    appendCard(content,'s6','EXAMPLE CODE', d.code.title || 'Arduino & ESP32 notes',(box)=>{
+      if((d.code.notes||[]).length) box.appendChild(ul(d.code.notes));
+      if((d.code.downloads||[]).length){
+        const wrap=create('p',{className:'code'});
+        wrap.innerHTML = d.code.downloads.map(x=>`<a href="${x.url}" target="_blank" rel="noopener">${x.label}</a>`).join(' &nbsp;•&nbsp; ');
+        box.appendChild(wrap);
+      }
+      if (d.code.snippet) box.appendChild(codeBlock(d.code.snippet));
+    });
+  }
+  if(d.sample_output && d.sample_output.image){
+    present.push({id:'s7', label:'Sample Output'});
+    appendCard(content,'s7','SAMPLE OUTPUT', d.sample_output.title || 'Serial monitor screenshot',(box)=>{
+      box.appendChild(mediaFigure(d.sample_output.image, d.sample_output.caption||''));
+    });
+  }
+  if(d.mechanical && (d.mechanical.dimensions || d.mechanical.image)){
+    present.push({id:'s8', label:'Mechanical'});
+    appendCard(content,'s8','MECHANICAL', d.mechanical.title || 'Board outline',(box)=>{
+      if(d.mechanical.dimensions) box.appendChild(pNode(`Board dimensions: <strong>${d.mechanical.dimensions}</strong>.`));
+      if(d.mechanical.image) box.appendChild(mediaFigure(d.mechanical.image, d.mechanical.caption||''));
+    });
+  }
+
+  const navHtml = (container)=> {
+    container.innerHTML='';
+    present.forEach((s,i)=>{
+      const a=create('a',{href:'#'+s.id});
+      a.appendChild(create('span',{className:'num',textContent:String(i+1)}));
+      a.append(' '+s.label);
+      container.appendChild(a);
+    });
+  };
+  navHtml(stepNav); navHtml(drawerNav);
+
+  Q('#supportBox').innerHTML = `<strong>Support:</strong> ${d.support || 'For help, contact <em>info@7semi.com</em>.'}`;
+  Q('#statusLine').innerHTML = `Status: <span class="ok">Documented</span>. Last updated: ${d.updated || ''}.`;
+
+  setupLightbox();
+  setupObservers();
+  setupDrawer();
+}
+
+/* toolbar buttons */
+Q('#btnPreview').addEventListener('click', ()=> render(collect()));
+const KEY='wiki_builder_draft_v1';
+Q('#btnSave').addEventListener('click', ()=>{ localStorage.setItem(KEY, JSON.stringify(collect())); alert('Draft saved in this browser.'); });
+Q('#btnLoad').addEventListener('click', ()=>{
+  const raw = localStorage.getItem(KEY);
+  if(!raw) return alert('No draft found.');
+  const d = JSON.parse(raw);
+  const set = (id,val)=>{ Q('#'+id).value = val||''; };
+  set('title',d.title); set('badge',d.badge); set('logo',d.logo); set('lead',d.lead);
+  set('hero_image',d.hero_image); set('hero_caption',d.hero_caption); set('overview',d.overview);
+  set('features',(d.features||[]).join('\n'));
+  set('specs', d.specs ? Object.entries(d.specs).map(([k,v])=>`${k}: ${v}`).join('\n') : '');
+  pinList.innerHTML=''; (d.pinouts||[]).forEach(p=>addPin(p.n,p.pin,p.desc));
+  set('pin_image', d.pinouts_media?.image);
+  set('pin_caption', d.pinouts_media?.caption);
+  set('hw_title',d.hardware?.title); set('hw_steps',(d.hardware?.wiring||[]).join('\n')); set('hw_image',d.hardware?.image); set('hw_caption',d.hardware?.caption);
+  set('code_title',d.code?.title); set('code_notes',(d.code?.notes||[]).join('\n')); set('code_snippet',d.code?.snippet||'');
+  dlList.innerHTML=''; (d.code?.downloads||[]).forEach(x=>addDl(x.label,x.url));
+  set('sample_image',d.sample_output?.image); set('sample_caption',d.sample_output?.caption);
+  set('mech_dimensions',d.mechanical?.dimensions); set('mech_image',d.mechanical?.image); set('mech_caption',d.mechanical?.caption);
+  set('support',d.support); set('updated',d.updated);
+  // re-enable sorting after rebuilding lists
+  makeSortable(pinList);
+  makeSortable(dlList);
+  alert('Draft loaded. Click Preview.');
+});
+
+/* ========= Export (JS version) ========= */
+Q('#btnDownload').addEventListener('click', ()=>{
+  const d = collect();
+  const OPEN_SCRIPT  = '<scr' + 'ipt>';
+  const CLOSE_SCRIPT = '</scr' + 'ipt>';
+
+  const doc = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>${escapeHtml(d.title||'7Semi Product Wiki')}</title>
+<meta name="description" content="${escapeAttr(d.lead||'7Semi product wiki.')}">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+<style>${Q('#mainStyle').innerHTML}</style>
+</head>
+<body>
+
+<div class="topbar" role="banner">
+  <button id="menuBtn" class="hamburger" aria-label="Open menu" aria-controls="drawer" aria-expanded="false" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+  </button>
+  <strong>7Semi Wiki</strong>
+</div>
+
+<div id="drawerBackdrop" aria-hidden="true"></div>
+<aside id="drawer" role="dialog" aria-modal="true" aria-label="Mobile menu">
+  <div class="drawer-head"><span class="drawer-title">MENU</span><button class="drawer-close" id="drawerClose" aria-label="Close menu" type="button">✕</button></div>
+  <nav class="stepnav" id="drawerNav" aria-label="Sections"></nav>
+</aside>
+
+<div class="wrapper">
+  <header class="hero" aria-labelledby="page-title">
+    <div class="brandbar">
+      <a href="https://www.7semi.colm" target="_blank" rel="noopener" aria-label="Go to 7Semi website">
+        <img id="logo" src="${escapeAttr(d.logo||'https://cdn11.bigcommerce.com/s-e7ighpotvb/images/stencil/original/image-manager/7semi.png')}" alt="7Semi Logo" />
+      </a>
+      <span class="badge" id="badge">${escapeHtml(d.badge||'')}</span>
+    </div>
+    <h1 id="page-title"><span class="grad">${escapeHtml(d.title||'')}</span></h1>
+    <p class="lead" id="lead">${escapeHtml(d.lead||'')}</p>
+  </header>
+
+  <section class="grid" aria-label="Product wiki">
+    <aside class="side" aria-label="Index"><h2>SECTIONS</h2><nav class="stepnav" id="stepNav"></nav></aside>
+    <main class="steps" id="content"></main>
+  </section>
+
+  <footer>
+    <div class="tipbox" id="supportBox"></div>
+    <p class="statusline" id="statusLine"></p>
+  </footer>
+</div>
+
+<div id="lightbox" role="dialog" aria-modal="true" aria-label="Image preview"><img src="" alt="" /></div>
+
+${OPEN_SCRIPT}
+${exportJS()}
+${CLOSE_SCRIPT}
+${OPEN_SCRIPT}
+const DATA = ${JSON.stringify(d)};
+render(DATA);
+${CLOSE_SCRIPT}
+
+</body>
+</html>`;
+
+  triggerDownload(doc, (d.title||'product') + '.html');
+});
+
+/* ========= Export (NO JS, BigCommerce-safe) ========= */
+Q('#btnDownloadSafe').addEventListener('click', ()=>{
+  const d = collect();
+  const safe = buildNoJsDoc(d);
+  triggerDownload(safe, (d.title||'product') + '-nojs.html');
+});
+
+function triggerDownload(text, filename){
+  const blob = new Blob([text], {type:'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const slug = filename.toLowerCase().replace(/[^a-z0-9.-]+/g,'-').replace(/(^-|-$)/g,'');
+  a.download = slug;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 0);
+}
+
+function escapeHtml(s){ return String(s||'').replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
+
+/* ===== Build NO-JS document string ===== */
+function buildNoJsDoc(d){
+  const specsRows = Object.entries(d.specs||{}).map(([k,v])=>`<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(String(v))}</td></tr>`).join('');
+  const pinsRows = (d.pinouts||[]).map(p=>`<tr><td>${escapeHtml(p.n||'')}</td><td>${escapeHtml(p.pin||'')}</td><td>${escapeHtml(p.desc||'')}</td></tr>`).join('');
+  const features = (d.features||[]).map(x=>`<li>${x}</li>`).join('');
+  const wiring = (d.hardware?.wiring||[]).map(x=>`<li>${x}</li>`).join('');
+  const notes = (d.code?.notes||[]).map(x=>`<li>${x}</li>`).join('');
+  const dls = (d.code?.downloads||[]).map(x=>`<a href="${escapeAttr(x.url)}" target="_blank" rel="noopener">${escapeHtml(x.label)}</a>`).join(' &nbsp;•&nbsp; ');
+
+  const sections = [];
+  const nav = [];
+
+  function card(id,kicker,title,bodyHtml){
+    nav.push(id);
+    sections.push(`
+      <article class="card" id="${id}">
+        <div class="kicker"><span class="num">${nav.length}</span> ${kicker}</div>
+        <h3>${title}</h3>
+        <div>${bodyHtml}</div>
+      </article>
+    `);
+  }
+
+  if (d.hero_image || d.overview){
+    card('s1','OVERVIEW','What is this product?',`
+      ${d.hero_image ? `<div class="media"><figure><img src="${escapeAttr(d.hero_image)}" alt=""><figcaption>${escapeHtml(d.hero_caption||'')}</figcaption></figure></div>`:''}
+      ${d.overview ? `<p>${d.overview}</p>`:''}
+    `);
+  }
+  if ((d.features||[]).length){
+    card('s2','FEATURES','Highlights',`<ul>${features}</ul>`);
+  }
+  if (Object.keys(d.specs||{}).length){
+    card('s3','TECHNICAL SPEC','Key parameters',`
+      <div class="table"><table style="min-width:100%; border-collapse:separate; border-spacing:0;">
+        <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+        <tbody>${specsRows}</tbody>
+      </table></div>
+    `);
+  }
+  if ((d.pinouts||[]).length || (d.pinouts_media && d.pinouts_media.image)) {
+    card('s4','PINOUTS','Headers & signals',`
+      ${
+        (d.pinouts_media && d.pinouts_media.image)
+          ? `<div class="media"><figure>
+               <img src="${escapeAttr(d.pinouts_media.image)}" alt="">
+               <figcaption>${escapeHtml(d.pinouts_media.caption||'')}</figcaption>
+             </figure></div>`
+          : ''
+      }
+      ${
+        (d.pinouts && d.pinouts.length)
+          ? `<div class="table"><table style="min-width:100%; border-collapse:separate; border-spacing:0;">
+               <thead><tr><th>#</th><th>Pin</th><th>Description</th></tr></thead>
+               <tbody>${pinsRows}</tbody>
+             </table></div>`
+          : ''
+      }
+    `);
+  }
+  if (d.hardware?.title || wiring || d.hardware?.image){
+    card('s5','HARDWARE', escapeHtml(d.hardware?.title || 'I²C wiring example'), `
+      ${wiring ? `<ul>${wiring}</ul>`:''}
+      ${d.hardware?.image ? `<div class="media"><figure><img src="${escapeAttr(d.hardware.image)}" alt=""><figcaption>${escapeHtml(d.hardware.caption||'')}</figcaption></figure></div>`:''}
+    `);
+  }
+  if (d.code?.title || notes || d.code?.downloads?.length || d.code?.snippet){
+    card('s6','EXAMPLE CODE', escapeHtml(d.code?.title || 'Arduino & ESP32 notes'), `
+      ${notes ? `<ul>${notes}</ul>`:''}
+      ${dls ? `<p class="code">${dls}</p>`:''}
+      ${d.code?.snippet ? `<pre class="codeblock"><code>${escapeHtml(d.code.snippet)}</code></pre>`:''}
+    `);
+  }
+  if (d.sample_output?.image){
+    card('s7','SAMPLE OUTPUT','Serial monitor screenshot', `
+      <div class="media"><figure><a href="${escapeAttr(d.sample_output.image)}" target="_blank" rel="noopener">
+      <img src="${escapeAttr(d.sample_output.image)}" alt=""></a><figcaption>${escapeHtml(d.sample_output.caption||'')}</figcaption></figure></div>
+    `);
+  }
+  if (d.mechanical?.dimensions || d.mechanical?.image){
+    card('s8','MECHANICAL','Board outline', `
+      ${d.mechanical?.dimensions ? `<p>Board dimensions: <strong>${escapeHtml(d.mechanical.dimensions)}</strong>.</p>`:''}
+      ${d.mechanical?.image ? `<div class="media"><figure><img src="${escapeAttr(d.mechanical.image)}" alt=""><figcaption>${escapeHtml(d.mechanical.caption||'')}</figcaption></figure></div>`:''}
+    `);
+  }
+
+  const navLinks = nav.map((id,i)=>`<a href="#${id}"><span class="num">${i+1}</span> ${sectionsOrder.find(s=>s.id===id)?.label||id}</a>`).join('');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>${escapeHtml(d.title||'7Semi Product Wiki')}</title>
+<meta name="description" content="${escapeAttr(d.lead||'7Semi product wiki.')}">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+<style>${Q('#mainStyle').innerHTML}</style>
+</head>
+<body>
+
+<input type="checkbox" id="navToggle" />
+<div class="nj-topbar">
+  <label for="navToggle" class="nj-hamburger" aria-label="Open menu">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </label>
+  <strong>7Semi Wiki</strong>
+</div>
+
+<label id="njBackdrop" for="navToggle" aria-hidden="true"></label>
+<aside id="njDrawer" role="dialog" aria-label="Mobile menu (tap outside to close)">
+  <div class="drawer-head">
+    <span class="drawer-title">MENU</span>
+    <label class="drawer-close" for="navToggle" aria-label="Close menu">✕</label>
+  </div>
+  <nav class="stepnav">${navLinks}</nav>
+</aside>
+
+<div class="wrapper">
+  <header class="hero" aria-labelledby="page-title">
+    <div class="brandbar">
+      <a href="https://www.7semi.colm" target="_blank" rel="noopener" aria-label="Go to 7Semi website">
+        <img src="${escapeAttr(d.logo||'https://cdn11.bigcommerce.com/s-e7ighpotvb/images/stencil/original/image-manager/7semi.png')}" alt="7Semi Logo" />
+      </a>
+      <span class="badge">${escapeHtml(d.badge||'')}</span>
+    </div>
+    <h1 id="page-title"><span class="grad">${escapeHtml(d.title||'')}</span></h1>
+    <p class="lead">${escapeHtml(d.lead||'')}</p>
+  </header>
+
+  <section class="grid" aria-label="Product wiki">
+    <aside class="side" aria-label="Index">
+      <h2>SECTIONS</h2>
+      <nav class="stepnav">${navLinks}</nav>
+    </aside>
+
+    <main class="steps">
+      ${sections.join('\n')}
+    </main>
+  </section>
+
+  <footer>
+    <div class="tipbox"><strong>Support:</strong> ${d.support || 'For help, contact <em>info@7semi.com</em>.'}</div>
+    <p class="statusline">Status: <span class="ok">Documented</span>. Last updated: ${escapeHtml(d.updated||'')}.</p>
+  </footer>
+</div>
+</body>
+</html>`;
+}
+
+/* minimal runtime JS for exported JS version */
+function exportJS(){
+return `
+const Q=(s,r=document)=>r.querySelector(s), QA=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const create=(t,a={})=>Object.assign(document.createElement(t),a);
+const sectionsOrder=[{id:'s1',label:'Overview'},{id:'s2',label:'Features'},{id:'s3',label:'Technical Specification'},{id:'s4',label:'Pinouts'},{id:'s5',label:'Hardware Interface'},{id:'s6',label:'Example Code (Arduino/ESP32)'},{id:'s7',label:'Sample Output'},{id:'s8',label:'Mechanical'}];
+function appendCard(root,id,kicker,title,fill){const art=create('article',{className:'card',id}),k=create('div',{className:'kicker'});k.appendChild(create('span',{className:'num',textContent:String(sectionsOrder.findIndex(s=>s.id===id)+1)}));k.append(' '+kicker);art.appendChild(k);art.appendChild(create('h3',{textContent:title}));const box=create('div');fill(box);art.appendChild(box);root.appendChild(art);} 
+function ul(items){const u=create('ul');(items||[]).forEach(x=>u.appendChild(create('li',{innerHTML:x})));return u;}
+function pNode(t){return create('p',{innerHTML:t});}
+function specTable(obj){const t=create('table',{className:'table',role:'table'}),th=create('thead'),trh=create('tr');trh.appendChild(create('th',{textContent:'Parameter'}));trh.appendChild(create('th',{textContent:'Value'}));th.appendChild(trh);t.appendChild(th);const tb=create('tbody');Object.entries(obj||{}).forEach(([k,v])=>{const tr=create('tr');tr.appendChild(create('td',{innerHTML:k}));tr.appendChild(create('td',{innerHTML:String(v)}));tb.appendChild(tr);});t.appendChild(tb);return t;}
+function pinTable(arr){const t=create('table',{className:'table',role:'table'}),th=create('thead'),trh=create('tr');['#','Pin','Description'].forEach(h=>trh.appendChild(create('th',{textContent:h})));th.appendChild(trh);t.appendChild(th);const tb=create('tbody');(arr||[]).forEach(row=>{const tr=create('tr');tr.appendChild(create('td',{textContent:row.n||''}));tr.appendChild(create('td',{textContent:row.pin||''}));tr.appendChild(create('td',{innerHTML:row.desc||''}));tb.appendChild(tr);});t.appendChild(tb);return t;}
+function mediaFigure(src,caption){const wrap=document.createElement('div');wrap.className='media';const fig=document.createElement('figure');const img=document.createElement('img');img.src=src;img.loading='lazy';img.decoding='async';fig.appendChild(img);if(caption){const cap=document.createElement('figcaption');cap.innerHTML=caption;fig.appendChild(cap);}wrap.appendChild(fig);const tools=document.createElement('div');tools.className='tools';const btn=document.createElement('button');btn.className='toolbtn';btn.type='button';btn.textContent='🔎 View full size';btn.addEventListener('click',()=>openLB(img));tools.appendChild(btn);wrap.appendChild(tools);return wrap;}
+function codeBlock(src){const wrap=document.createElement('div');wrap.className='codewrap';const pre=document.createElement('pre');pre.className='codeblock';const code=document.createElement('code');code.textContent=(src||'').trim();pre.appendChild(code);const btn=document.createElement('button');btn.className='copybtn';btn.type='button';btn.textContent='Copy';btn.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(code.textContent);btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy',1200);}catch(_){btn.textContent='Oops';setTimeout(()=>btn.textContent='Copy',1200);}});wrap.append(pre,btn);return wrap;}
+function setupLightbox(){const lb=Q('#lightbox'),lbImg=lb.querySelector('img');window.openLB=(img)=>{lbImg.src=img.currentSrc||img.src;lbImg.alt=img.alt||'Preview';lb.classList.add('open');};lb.addEventListener('click',()=>lb.classList.remove('open'));document.addEventListener('keydown',e=>{if(e.key==='Escape')lb.classList.remove('open');});QA('.media img').forEach(img=>{img.style.cursor='zoom-in';img.addEventListener('click',()=>openLB(img));});}
+function setupObservers(){const links=QA('#stepNav a, #drawerNav a');const sections=links.map(a=>Q(a.getAttribute('href'))).filter(Boolean);const mobProg=Q('#mobileProgress');const io=new IntersectionObserver((entries)=>{entries.forEach(entry=>{if(entry.isIntersecting){const id='#'+entry.target.id;links.forEach(a=>a.classList.toggle('active',a.getAttribute('href')===id));const idx=sections.indexOf(entry.target);if(mobProg)mobProg.value=Math.round(((idx+1)/sections.length)*100);}});},{rootMargin:'-40% 0px -50% 0px',threshold:.01});sections.forEach(sec=>io.observe(sec));}
+function setupDrawer(){const drawer=Q('#drawer'),backdrop=Q('#drawerBackdrop'),menuBtn=Q('#menuBtn'),drawerClose=Q('#drawerClose');function openDrawer(){drawer.classList.add('open');backdrop.classList.add('open');document.body.style.overflow='hidden';if(menuBtn)menuBtn.setAttribute('aria-expanded','true');}function closeDrawer(){drawer.classList.remove('open');backdrop.classList.remove('open');document.body.style.overflow='';if(menuBtn)menuBtn.setAttribute('aria-expanded','false');}if(menuBtn)menuBtn.addEventListener('click',openDrawer);if(drawerClose)drawerClose.addEventListener('click',closeDrawer);if(backdrop)backdrop.addEventListener('click',closeDrawer);document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer();});Q('#drawerNav').addEventListener('click',(e)=>{if(e.target.matches('a'))closeDrawer();});}
+function render(d){if(d.logo)Q('#logo').src=d.logo;Q('#badge').textContent=d.badge||'';Q('#page-title').innerHTML='<span class="grad">'+(d.title||'')+'</span>';Q('#lead').innerHTML=d.lead||'';const stepNav=Q('#stepNav'),drawerNav=Q('#drawerNav'),content=Q('#content');stepNav.innerHTML='';drawerNav.innerHTML='';content.innerHTML='';const present=[];if(d.hero_image||d.overview){present.push({id:'s1',label:'Overview'});appendCard(content,'s1','OVERVIEW','What is this product?',(box)=>{if(d.hero_image)box.appendChild(mediaFigure(d.hero_image,d.hero_caption||''));if(d.overview)box.appendChild(pNode(d.overview));});}if(d.features&&d.features.length){present.push({id:'s2',label:'Features'});appendCard(content,'s2','FEATURES','Highlights',(box)=>box.appendChild(ul(d.features)));}if(d.specs&&Object.keys(d.specs).length){present.push({id:'s3',label:'Technical Specification'});appendCard(content,'s3','TECHNICAL SPEC','Key parameters',(box)=>box.appendChild(specTable(d.specs)));}if((d.pinouts&&d.pinouts.length)||(d.pinouts_media&&d.pinouts_media.image)){present.push({id:'s4',label:'Pinouts'});appendCard(content,'s4','PINOUTS','Headers & signals',(box)=>{if(d.pinouts_media&&d.pinouts_media.image) box.appendChild(mediaFigure(d.pinouts_media.image,d.pinouts_media.caption||'')); if(d.pinouts&&d.pinouts.length) box.appendChild(pinTable(d.pinouts));});}if(d.hardware&&(d.hardware.title||(d.hardware.wiring||[]).length||d.hardware.image)){present.push({id:'s5',label:'Hardware Interface'});appendCard(content,'s5','HARDWARE',d.hardware.title||'I²C wiring example',(box)=>{if((d.hardware.wiring||[]).length)box.appendChild(ul(d.hardware.wiring));if(d.hardware.image)box.appendChild(mediaFigure(d.hardware.image,d.hardware.caption||''));});}if(d.code&&(d.code.title||(d.code.notes||[]).length||(d.code.downloads||[]).length||d.code.snippet)){present.push({id:'s6',label:'Example Code (Arduino/ESP32)'});appendCard(content,'s6','EXAMPLE CODE',d.code.title||'Arduino & ESP32 notes',(box)=>{if((d.code.notes||[]).length)box.appendChild(ul(d.code.notes));if((d.code.downloads||[]).length){const wrap=document.createElement('p');wrap.className='code';wrap.innerHTML=d.code.downloads.map(x=>'<a href="'+x.url+'" target="_blank" rel="noopener">'+x.label+'</a>').join(' &nbsp;•&nbsp; ');box.appendChild(wrap);}if(d.code.snippet){box.appendChild(codeBlock(d.code.snippet));}});}if(d.sample_output&&d.sample_output.image){present.push({id:'s7',label:'Sample Output'});appendCard(content,'s7','SAMPLE OUTPUT',d.sample_output.title||'Serial monitor screenshot',(box)=>{box.appendChild(mediaFigure(d.sample_output.image,d.sample_output.caption||''));});}if(d.mechanical&&(d.mechanical.dimensions||d.mechanical.image)){present.push({id:'s8',label:'Mechanical'});appendCard(content,'s8','MECHANICAL',d.mechanical.title||'Board outline',(box)=>{if(d.mechanical.dimensions)box.appendChild(pNode('Board dimensions: <strong>'+d.mechanical.dimensions+'</strong>.'));if(d.mechanical.image)box.appendChild(mediaFigure(d.mechanical.image,d.mechanical.caption||''));});}function nav(container){container.innerHTML='';present.forEach((s,i)=>{const a=document.createElement('a');a.href='#'+s.id;a.appendChild(create('span',{className:'num',textContent:String(i+1)}));a.append(' '+s.label);container.appendChild(a);});}nav(stepNav);nav(drawerNav);document.getElementById('supportBox').innerHTML='<strong>Support:</strong> '+(d.support||'For help, contact <em>info@7semi.com</em>.');document.getElementById('statusLine').innerHTML='Status: <span class="ok">Documented</span>. Last updated: '+(d.updated||'');setupLightbox();setupObservers();setupDrawer();}
+`;
+}
+</script>
+</body>
+</html>
